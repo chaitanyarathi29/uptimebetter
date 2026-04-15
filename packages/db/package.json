@@ -1,8 +1,11 @@
 {
-  "name": "api",
+  "name": "@repo/db",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "exports": {
+    "./client": "./src/index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -10,12 +13,10 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@repo/db": "workspace:*",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@types/dotenv": "^8.2.3",
+    "@types/node": "^25.6.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "zod": "^4.3.6"
+    "prisma": "^7.7.0"
   }
 }
