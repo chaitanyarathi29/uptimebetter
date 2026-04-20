@@ -16,15 +16,16 @@ model User {
   id            String      @id        @unique      @default(uuid())
   username      String      @unique
   password      String
-  Website       Website[]        
+  Websites       Website[]        
 }
 
 model Website {
   id          String      @id       @default(uuid())
   url         String
+  user_id     String
   timeAdded   DateTime
   ticks       WebsiteTicks[]
-  users       User[]
+  user       User         @relation(fields: [user_id], references: [id])
 }
 
 model Region {
@@ -41,6 +42,7 @@ model WebsiteTicks {
   website           Website     @relation(fields: [website_id], references: [id])
   region_id         String
   website_id        String
+  createdAt         DateTime    @default(now())
 }
 
 enum WebsiteStatus {

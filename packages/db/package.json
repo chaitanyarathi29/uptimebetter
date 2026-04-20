@@ -1,10 +1,14 @@
 {
   "name": "@repo/db",
-  "module": "index.ts",
+  "version": "0.0.0",
   "type": "module",
   "private": true,
   "exports": {
     "./client": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "npm run build"
   },
   "devDependencies": {
     "@types/bun": "latest"
