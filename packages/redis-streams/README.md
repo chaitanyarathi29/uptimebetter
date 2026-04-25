@@ -1,4 +1,4 @@
-# producer
+# redis
 
 To install dependencies:
 

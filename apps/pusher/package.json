@@ -1,15 +1,16 @@
 {
-  "name": "producer",
+  "name": "pusher",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/redis": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "dependencies": {
-    "redis": "^5.12.1"
   }
 }
