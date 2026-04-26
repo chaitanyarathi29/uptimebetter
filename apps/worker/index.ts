@@ -18,20 +18,22 @@ async function main(){
         return;
     }
     //read from the stream
-    const res = await xReadGroup(REGION_ID,WORKER_ID);
+    while(1){
+        const res = await xReadGroup(REGION_ID,WORKER_ID);
 
-    if(!res){
-        return;
+        if(!res){
+            continue;
+        }
+
+        let promises = res.map(({message}) => {fetchWebsite(message.url,message.id)})
+        await Promise.all(promises);
+        console.log(promises.length);
+        //process the website and store the result in the DB 
+        //bulk insert through queue maybe
+        
+        //ack back to the queue that this event has been processed
+        xAckBulk(REGION_ID, res.map(({id})=> id));
     }
-
-    let promises = res.map(({message}) => {fetchWebsite(message.url,message.id)})
-    await Promise.all(promises);
-    console.log(promises.length);
-    //process the website and store the result in the DB 
-    //bulk insert through queue maybe
-    
-    //ack back to the queue that this event has been processed
-    xAckBulk(REGION_ID, res.map(({id})=> id));
 }
 
 async function fetchWebsite(url: string,websiteId: string):Promise<void>{

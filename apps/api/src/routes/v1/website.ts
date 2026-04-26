@@ -49,7 +49,7 @@ websiteRouter.get('/status/:websiteId', userMiddleware, async (req,res) => {
                     orderBy: [{
                         createdAt: 'desc'
                     }],
-                    take: 1
+                    take: 10
                 }
             }
         })
@@ -66,6 +66,55 @@ websiteRouter.get('/status/:websiteId', userMiddleware, async (req,res) => {
             url: website.url,
             timeAdded: website.timeAdded,
             ticks: website.ticks
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            message: "Internal server error"
+        })
+    }
+})
+
+websiteRouter.get('/websites', userMiddleware, async (req,res) => {
+    try {
+        const websites = await client.website.findMany({
+            where: {
+                user_id: req.userId!
+            },
+            include: {
+                ticks: {
+                    orderBy: [{
+                        createdAt: 'desc'
+                    }],
+                    take: 10
+                }
+            },
+            orderBy: {
+                timeAdded: 'desc'
+            }
+        })
+
+        const data = websites.map((website) => {
+            const latestTick = website.ticks[0];
+            const avgResponseTime = website.ticks.length
+                ? Math.round(
+                    website.ticks.reduce((sum, tick) => sum + tick.response_time_ms, 0) /
+                        website.ticks.length
+                )
+                : null;
+
+            return {
+                id: website.id,
+                url: website.url,
+                timeAdded: website.timeAdded,
+                status: latestTick?.status ?? 'Unknown',
+                latencyMs: latestTick?.response_time_ms ?? null,
+                avgResponseTimeMs: avgResponseTime
+            };
+        })
+
+        res.json({
+            data
         })
     } catch (error) {
         console.log(error);

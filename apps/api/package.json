@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "scripts":{
+  "scripts": {
     "build": "bun run src/index.ts",
     "dev": "bun run src/index.ts"
   },
@@ -15,10 +15,12 @@
   },
   "dependencies": {
     "@repo/db": "workspace:*",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
     "jsonwebtoken": "^9.0.3",
     "zod": "^4.3.6"
   }
