@@ -12,9 +12,9 @@ async function main(){
     await xAddBulk(websites.map(w => ({
         url: w.url,
         id: w.id
-    })))
+    })));
 }
 
 setInterval(()=> {
     main();
-},3*60*1000)
+},3*60*1000);

@@ -6,6 +6,14 @@ const client = await createClient()
 
 type WebsiteEvent = {url: string, id: string}
 
+type MessageType = {
+        id: string,
+        message: {
+            url: string,
+            id: string
+        }
+    };
+
 const STREAM_NAME = 'betteruptime:website';
 
 async function xAdd({url, id}: WebsiteEvent) {
@@ -30,21 +38,25 @@ export async function xAddBulk(websites: WebsiteEvent[]){
     }
 }
 
-export async function xReadGroup(consumerGroup: string, workerId: string){
+export async function xReadGroup(consumerGroup: string, workerId: string): Promise<MessageType[] | undefined>{
     
     const res = await client.xReadGroup(
         consumerGroup, workerId, {
             key: STREAM_NAME,
             id: '>'
-        }, {
+        },{
             'COUNT': 5
         }
     )
-
-    console.log(res);
-    return res;
+    //@ts-ignore
+    let messages: MessageType[] | undefined = res?.[0]?.messages;
+    return messages;
 }
 
 export async function xAck(consumerGroup: string, streamId: string){
     const res = await client.xAck(STREAM_NAME,consumerGroup,streamId);
+}
+
+export async function xAckBulk(consumerGroup: string, streamIds: string[]){
+    streamIds.map(streamId => xAck(consumerGroup,streamId));
 }

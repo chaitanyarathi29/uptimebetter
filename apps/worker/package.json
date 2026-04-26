@@ -3,7 +3,6 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
-  
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -11,9 +10,10 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "redis": "^5.12.1",
     "@repo/db": "workspace:*",
-    "@repo/redis": "workspace:*"
+    "@repo/redis": "workspace:*",
+    "axios": "^1.15.2",
+    "dotenv": "^17.4.2",
+    "redis": "^5.12.1"
   }
 }
