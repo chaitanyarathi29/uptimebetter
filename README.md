@@ -8,6 +8,12 @@ This repo is a Bun powered monorepo using Turbo, with services for API, scheduli
 
 Traditional monitoring apps often collapse when you add more checks or regions. BetterUptime is designed around a queue and worker model, so it can scale horizontally without slowing the API or the dashboard.
 
+<img width="1760" height="1064" alt="Screenshot 2026-04-26 001223" src="https://github.com/user-attachments/assets/933621d2-7640-44b1-96ea-c6191028b2c0" />
+
+<img width="2559" height="1421" alt="Screenshot 2026-04-26 210824" src="https://github.com/user-attachments/assets/8224e5a6-4dfd-4a2c-aff5-92cb783ccba8" />
+
+<img width="2559" height="1415" alt="Screenshot 2026-04-26 210803" src="https://github.com/user-attachments/assets/fa269687-eca2-4884-9a92-68b0f7dc563e" />
+
 ## Key features
 
 - JWT authentication for secure access
