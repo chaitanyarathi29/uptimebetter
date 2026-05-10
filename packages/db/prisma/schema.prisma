@@ -33,7 +33,7 @@ model Region {
   name        String    
   ticks       WebsiteTicks[]
 }
-
+ 
 model WebsiteTicks {
   id                String      @id       @default(uuid())
   response_time_ms  Int

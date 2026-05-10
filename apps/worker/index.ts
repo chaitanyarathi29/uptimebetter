@@ -33,6 +33,8 @@ async function main(){
         
         //ack back to the queue that this event has been processed
         xAckBulk(REGION_ID, res.map(({id})=> id));
+
+        //XAUTOCLAIM to assign pending stale messages to consumer group again
     }
 }
 

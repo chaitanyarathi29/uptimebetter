@@ -1,159 +1,230 @@
-# Turborepo starter
+# BetterUptime
 
-This Turborepo starter is maintained by the Turborepo core team.
+BetterUptime is a full stack uptime monitoring system built to scale. It lets users register websites, continuously checks their health, and shows real time status and latency in a clean dashboard.
 
-## Using this example
+This repo is a Bun powered monorepo using Turbo, with services for API, scheduling, workers, and a Next.js front end.
 
-Run the following command:
+## What this solves
 
-```sh
-npx create-turbo@latest
+Traditional monitoring apps often collapse when you add more checks or regions. BetterUptime is designed around a queue and worker model, so it can scale horizontally without slowing the API or the dashboard.
+
+## Key features
+
+- JWT authentication for secure access
+- Add websites and view status history
+- Latency tracking in milliseconds
+- Region aware health checks
+- Redis Streams queue for scale and back pressure
+- Acknowledgement based processing to avoid lost tasks
+
+## Architecture at a glance
+
+```
+User -> Frontend -> API -> Postgres
+										|
+										v
+							 Scheduler (Pusher)
+										|
+										v
+							 Redis Streams Queue
+										|
+										v
+								 Workers -> Postgres
 ```
 
-## What's inside?
+## Services and packages
 
-This Turborepo includes the following packages/apps:
+Apps:
 
-### Apps and Packages
+- api: Express API for auth, websites, and status queries
+- fe/my-app: Next.js front end
+- pusher: scheduler that pushes websites into the queue
+- worker: workers that consume queue tasks and run checks
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Packages:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+- @repo/db: Prisma client and database adapter
+- @repo/redis: Redis Streams client helpers
+- @repo/eslint-config, @repo/typescript-config: shared tooling
 
-### Utilities
+## Data model
 
-This Turborepo has some additional tools already setup for you:
+- User: authentication identity
+- Website: URL and owner
+- Region: logical region for checks
+- WebsiteTicks: one record per check
+- WebsiteStatus enum: Up, Down, Unknown
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+## Queue and worker flow
 
-### Build
+1. The scheduler reads all websites from Postgres.
+2. It pushes each URL to the Redis stream (betteruptime:website).
+3. Workers read from a Redis Streams consumer group.
+4. Each worker checks the URL and writes a WebsiteTicks row.
+5. The worker acknowledges the task only after it is processed.
 
-To build all apps and packages, run the following command:
+This acknowledgement step is critical for reliability. If a worker crashes, unacked tasks remain pending and can be claimed again.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Scalability and reliability
 
-```sh
-cd my-turborepo
-turbo build
-```
+- Decoupled API: user traffic never blocks on health checks
+- Back pressure: Redis streams buffer spikes in traffic
+- Horizontal scaling: add workers without changing the API
+- Region scalability: run workers in multiple regions
+- Task acknowledgement: checks are only marked complete after success
 
-Without global `turbo`, use your package manager:
+## Getting started
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
-```
+### Requirements
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+- Bun 1.3.1 (recommended, repo uses Bun workspaces)
+- Node 18+ for tooling compatibility
+- Postgres database
+- Redis server
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### Install
 
 ```sh
-cd my-turborepo
-turbo dev
+bun install
 ```
 
-Without global `turbo`, use your package manager:
+### Environment variables
+
+Create a .env file in each service folder or export variables when running.
+
+API (apps/api):
+
+```
+DATABASE_URL=postgres://user:password@localhost:5432/postgres
+JWT_SECRET=change-me
+PORT=3000
+```
+
+Pusher (apps/pusher):
+
+```
+DATABASE_URL=postgres://user:password@localhost:5432/postgres
+```
+
+Worker (apps/worker):
+
+```
+DATABASE_URL=postgres://user:password@localhost:5432/postgres
+REGION_ID=us-east-1
+WORKER_ID=worker-1
+```
+
+Frontend (apps/fe/my-app):
+
+```
+NEXT_PUBLIC_API_BASE=http://localhost:3000
+```
+
+Redis is expected at the default connection settings. If you need a custom URL, update the Redis client in packages/redis-streams.
+
+### Database setup
+
+Prisma migrations live in packages/db/prisma/migrations. After setting DATABASE_URL:
 
 ```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
+cd packages/db
+bunx prisma migrate dev
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+You also need Region records for any REGION_ID values your workers use. Insert them in Postgres before starting workers.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+### Redis setup
+
+Create a consumer group per region (group name must match REGION_ID):
 
 ```sh
-turbo dev --filter=web
+redis-cli XGROUP CREATE betteruptime:website us-east-1 $ MKSTREAM
 ```
 
-Without global `turbo`:
+### Run locally
+
+Start the API:
 
 ```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
+cd apps/api
+bun run dev
 ```
 
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Start the scheduler:
 
 ```sh
-cd my-turborepo
-turbo login
+cd apps/pusher
+bun run index.ts
 ```
 
-Without global `turbo`, use your package manager:
+Start a worker:
 
 ```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
+cd apps/worker
+bun run index.ts
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Start the front end:
 
 ```sh
-turbo link
+cd apps/fe/my-app
+bun run dev
 ```
 
-Without global `turbo`:
+Note: the API and Next.js default to port 3000. Run one of them on a different port (use PORT for the API or -p for Next) and set NEXT_PUBLIC_API_BASE accordingly.
+
+## API endpoints
+
+All protected endpoints require Authorization: Bearer <token>.
+
+- POST /api/v1/signup
+- POST /api/v1/signin
+- POST /api/v1/website
+- GET /api/v1/websites
+- GET /api/v1/status/:websiteId
+
+## Front end flow
+
+- Sign in or sign up to get a JWT token stored in localStorage
+- Add websites in the dashboard
+- View status ticks and latency history per website
+
+## Project structure
+
+```
+apps/
+	api/
+	fe/my-app/
+	pusher/
+	worker/
+packages/
+	db/
+	redis-streams/
+	eslint-config/
+	typescript-config/
+```
+
+## Common scripts
+
+From the repo root:
 
 ```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
+bun run dev
+bun run build
+bun run lint
 ```
 
-## Useful Links
+Use Turbo filters to target a single app when needed.
 
-Learn more about the power of Turborepo:
+## Reliability notes
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- Worker acknowledgement ensures tasks are only marked done after successful processing.
+- Redis Streams keeps pending tasks for retry when a worker fails.
+- Region awareness makes multi region monitoring straightforward.
+
+## Roadmap ideas
+
+- Alerts and notifications
+- SLA and reporting dashboards
+- Configurable check intervals
+- Multi user teams and roles
